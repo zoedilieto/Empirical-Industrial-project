@@ -1,0 +1,268 @@
+\documentclass{article}
+
+\usepackage[margin=0.89in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{amssymb}
+
+\graphicspath{{../output/}}
+
+\title{Empirical IO -- Problem Set 2: Demand and Supply Estimation}
+\author{Giovanni Cecchi, Zoe Di Lieto, David Herskovits, Lorenzo Morandi, Jakub Przewoski}
+\date{\today}
+
+
+
+\usepackage{lmodern}
+\usepackage{mathtools}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+\setlength{\textfloatsep}{10pt plus 2pt minus 4pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\begin{document}
+\maketitle
+\vspace{-4em}
+
+\section{Part I: Logit Demand}
+\paragraph{Cleaning.} Note that 63 Canadian apps appeared twice in the dataset, each time with a different estimate of downloads. As we had no way to know which estimate is correct, we dropped all Canadian observations and excluded Canada from the estimation. Our results are very similar if we instead keep all Canadian observations, only the lower-ranked duplicates, or only the higher-ranked ones.
+\subsection{Berry Logit}
+
+We use two instruments and their combination: first, as suggested by the problem set, we use variation in the number of competing apps in the same genre and country (count). Second, we use the share of other apps with in-app purchases in the same genre and country (other IAP). Then, we combine these instruments. Additionally, in all specifications we control for the average rating score and in-app purchases. For robustness, we introduce country fixed effects as controls to the specification with combined instruments. The interpretation is that we control for the fact that different markets have different propensities to choose the outside option. Note that we excluded outside apps from all estimations.
+
+We estimate
+\begin{equation}
+\ln(s_{jc}) - \ln(s_{0c}) = \gamma\, p_{jc} + \beta_1\, \text{IAP}_{jc} + \beta_2\, \text{Score}_{jc} + \xi_{jc},
+\end{equation}
+where $s_{jc}$ is the download share of app $j$ in country $c$, $s_{0c}$ is the share of the outside option, and $\xi_{jc}$ is unobserved quality. Since $p_{jc}$ is likely correlated with $\xi_{jc}$, we instrument it.
+
+In Table 1, we report the results from the Berry logit estimates.
+
+\input{berry_logit}
+
+When using OLS, we obtain a price coefficient that is essentially zero (and slightly positive). This is to be expected, given that price is an endogenous variable, so the OLS estimates are not valid. For example, unobserved quality is not controlled for, and it is likely to be positively correlated with both prices and quantities, so the price coefficient is biased upwards. Note that the coefficient being positive is unreasonable as it would mean there is no tradeoff to increasing prices, since it would increase both revenue per consumer and the number of consumers. For the estimates to be valid, we need instruments: the estimates we obtain this way are consistent and lie in a relatively narrow range. Given the similarity of our estimates, we can plausibly conclude that the IVs employed are valid. The estimates stay similar when adding country fixed effects.
+
+Note that the number of observations is lower when we use the other-IAP instrument, as it excludes apps that had no other apps in the same genre and country. However, this excludes only 13 apps, so the effect is likely to be marginal.
+\input{berry_firststage}
+
+In the first stage, the number of competing apps is associated with higher prices (here, the coefficient should be interpreted as the impact of one more competitor), while the share of other apps offering in-app purchases is associated with lower prices (here, the coefficient should be interpreted as going from no competitors to all competitors in the same category offering in-app purchases). See the results reported in Table 2.
+
+Note that when using both instruments, the first-stage estimates do not change substantially. Also note that these instruments are not particularly strong, as the F-test values are not very high.
+
+
+\subsection{Nested Logit}
+
+For the nested logit, we instrumented both price and the within-group market share, hence the need for two instruments.
+
+\input{nested_logit}
+
+In the OLS model, the price coefficient is not significant and very close to zero, as in the Berry logit model, while the nesting coefficient is positive and highly significant. This is to be expected, given that apps with a larger within-nest share mechanically have a larger market share as well. The IV specification, used to correct for the endogeneity of both price and the within-nest log share, yields results similar to the IV estimation of the first model, with a non-significant nesting coefficient. Moreover, the nested coefficient changes sign when we control for country fixed effects, meaning that the within-nest estimate is particularly unstable (and a negative sign is not reasonable).  Therefore, it is probably safe to proceed with the simple logit model, as we didn't find evidence for strong within-nest correlation. 
+
+\section{Part II: Supply Analysis}
+
+\subsection{Cost Estimation}
+
+First, note that we used our estimates from the 11-country sample (as we excluded Canada) to estimate costs on the US sample. Second, one developer owned both an outside app and an inside app. Since we normally think of the outside good as not downloading any of the apps under consideration, we treated the outside apps as not belonging to any developer (they were also excluded from the estimation).
+
+All the derivations of the cost and markup formulas are in the Appendix.
+
+We report our results for the current ownership structure in Tables 4 and 5; see the discussion in the next section.
+
+\subsection{Markup Estimation}
+
+\input{markups_ownership}
+
+For each ownership structure we have a different markup formula. For the current ownership structure, it is $\mu_j=-1/[\gamma(1-S_f)]$, with $S_f$ being the sum of the market shares of all products owned by the owner of product $j$. For single-product firms, we use $s_j$, the market share of product $j$, instead of $S_f$. In the monopolist scenario, the monopolist owns all inside apps, so $1-S_f=s_0$ and $\mu_j=-1/(\gamma s_0)$: that is, we assume that outside apps are not owned by the same developer. Otherwise, we would reach the impossible situation in which the developer could raise prices as high as it wishes, as we normally think of the outside option as not downloading any of the apps.
+
+We obtain extremely large negative markups when considering the OLS specification. The reason is that the OLS price coefficient $\gamma$ is very small but positive (Table 1), yielding large and negative markups. Of course, these estimates are unreasonable, no producer would have large negative markups, but it is also unreasonable to have a positive coefficient on prices.  This could be due to endogenous prices: high unobserved quality probably raises both demand and prices, making demand appear less price-sensitive than it actually is. Since $c_j=p_j-\mu_j$, the negative OLS markups in turn imply implausibly large marginal costs (Table 5). By contrast, the markups estimated through the IV specifications are similar to each other within each ownership structure.
+\input{costs_ownership}
+
+When looking at the specifications that include instrumental variables, we obtain more reasonable magnitudes both for the current ownership structure and for single-product firms, with the former always having slightly higher margins: as owners control a higher market share and more products, they can internalize the effect of a price increase of product $j$ on their other products. The third ownership structure, i.e.\ the ``Monopolist'' row of Table 4, sees a stark increase in markups, as the monopolist can internalize the effect of a price increase of product $j$ on all the other products, leading to much higher markups across all apps. Under all IV specifications, these markups imply negative average marginal costs (Table 5). Notably, in performing this exercise, we assumed the apps to be owned by a monopolist, when in reality they are not. Given the estimates of negative marginal costs, these prices are not realistic: nevertheless, we assume these would have been the optimal prices of monopolists under the monopolist scenario. There are no large differences between current ownership and single-product firms, as the current ownership structure is close to the single-product one. See Tables 4 and 5 for the estimated average markups and marginal costs.
+
+Adding country fixed effects result in slightly larger markups and slightly smaller costs, but they are in line with the other IV estimates.
+
+\subsection{Merger Simulation}
+
+In this last part, we considered a scenario in which the market leader Mojang considers acquiring another developer. We simulated the Bertrand--Nash equilibrium in which firms are asymmetric competitors selling differentiated products. For the merger simulation, we use the IV estimate with both instruments (competing-app count and other apps' IAP), with no country fixed effects.
+
+We simulated the acquisition of each of the three largest developers other than Mojang, ranked by their combined US market shares. Under differentiated-product Bertrand competition, a merger allows the acquiring firm to internalize substitution between its own products and the acquired apps, potentially increasing combined profits even without cost efficiencies. We compared the three scenarios to identify the most profitable acquisition among the candidates considered.
+
+\begin{table}[htbp]
+\centering
+\caption{Equilibrium price changes for the merging firms}
+\label{tab:merger-prices}
+\begin{tabular}{lrrrr}
+\toprule
+& \multicolumn{3}{c}{Minecraft}
+& Acquired apps \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-5}
+Target & Before & After & Change & Change per app \\
+\midrule
+Rockstar Games  & 6.9900 & 7.0197 & +0.0297 & +0.1057 \\
+Fireproof Games & 6.9900 & 7.0091 & +0.0191 & +0.1054 \\
+SQUARE ENIX Ltd & 6.9900 & 7.0087 & +0.0187 & +0.1054 \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+\begin{minipage}{0.95\textwidth}
+\footnotesize
+Notes: Prices are expressed in the dataset's price units. Marginal costs are held fixed.
+\end{minipage}
+\end{table}
+
+First, we analyze the change in the price of the app sold by Mojang, \textit{Minecraft}, after each of the three simulated mergers. In all three scenarios, its price increases, which can be explained by the internalization of diverted profits coming from the substitution of Minecraft with the app(s) sold by the respective merging party. The merger with Rockstar Games generates a greater increase in the price of Minecraft than the other two. With the simple logit model, consumers switch proportionally to market shares, and among the remaining firms, Minecraft has about the same share in all three scenarios (only the denominator is different). However, the price of Minecraft changes differently because the market shares of the acquired firms differ: the more switchers would move to the acquired firm, the safer it is to raise prices. Moreover, note that the price of the acquired apps changes substantially more: intuitively, many of their switchers would shift to Minecraft, which has a substantial market share (about 15.2\%), so the merged firm would benefit from them, while few switchers from Minecraft would move to the acquired firm, given that the market shares of the acquired firms are much smaller (about 2.2--3.5\%).
+
+\begin{table}[htbp]
+\centering
+\caption{Changes relative to Mojang and the target combined
+before acquisition}
+\label{tab:merger-changes}
+\begin{tabular}{lrrr}
+\toprule
+Target & $\Delta$ Market share (pp) & $\Delta$ Revenue
+       & $\Delta$ Operating profit \\
+\midrule
+Rockstar Games  & -1.2346 & -68.3728 & +0.5538 \\
+Fireproof Games & -0.8187 & -26.7195 & +0.3368 \\
+SQUARE ENIX Ltd & -0.8014 & -22.1998 & +0.3284 \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+\begin{minipage}{0.95\textwidth}
+\footnotesize
+Notes: Changes equal post-merger outcomes minus the two firms' combined pre-merger outcomes. Marginal costs remain unchanged; operating profit excludes fixed costs and acquisition payments.
+\end{minipage}
+\end{table}
+
+Table 7 shows that all three mergers reduce market share and revenue relative to the combined pre-merger outcomes of the two firms. This result highlights that the price increase drives some consumers to rival apps (loss in market share), and that the higher margin does not compensate for the loss in the number of sales (loss in revenue). Still, the reduction in variable costs (fewer units produced and sold) and the higher margin per unit more than compensate for these losses, making all three mergers profitable. Among the candidates considered, Rockstar Games generates the largest gains, so we would recommend acquiring Rockstar Games.
+
+\appendix
+\clearpage
+\begingroup
+\definecolor{ink}{HTML}{20354D}
+\definecolor{muted}{HTML}{596775}
+\titleformat{\section}{\large\bfseries\color{ink}}{\thesection}{0.65em}{}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\abovedisplayskip}{8pt}
+\setlength{\belowdisplayskip}{8pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\small\color{muted}\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\setlength{\headheight}{14pt}
+\newcommand{\ddp}[1]{\frac{\partial #1}{\partial p_j}}
+
+\thispagestyle{plain}
+{\LARGE\bfseries\color{ink}Appendix}\par
+In the Appendix we derive the formulas for the markup estimation.\footnote{\textit{Note on AI usage:} this was handwritten, and we used an LLM to transcribe the handwritten notes to \LaTeX.}
+\section{Single-product firms: demand derivatives}
+Let $s_j$ denote app $j$'s market share and $s_0$ the outside-option share.
+Write the logit demand equation as
+\begin{equation}
+\ln(s_j)-\ln(s_0)=\gamma p_j+\beta_1\, \text{IAP}_j+\beta_2\, \text{Score}_j+\xi_j,
+\qquad \gamma<0.
+\end{equation}
+Holding other prices, characteristics, and unobserved demand terms fixed,
+\begin{align}
+\frac{1}{s_j}\ddp{s_j}-\frac{1}{s_0}\ddp{s_0}&=\gamma,\\
+\ddp{s_j}&=\frac{s_j}{s_0}\ddp{s_0}+\gamma s_j.
+\end{align}
+For another app $k\ne j$, the same differentiation gives
+\begin{equation}
+\ddp{s_k}=\frac{s_k}{s_0}\ddp{s_0},\qquad k\ne j.
+\end{equation}
+Since all shares sum to one, their derivatives sum to zero. Hence
+\begin{align*}
+0
+&=\ddp{s_0}+\sum_{k=1}^{J}\ddp{s_k}\\
+&=\ddp{s_0}+\ddp{s_j}+\sum_{k\ne j}\ddp{s_k}\\
+&=\gamma s_j+\ddp{s_0}
+ \left(1+\frac{s_j}{s_0}+\frac{\sum_{k\ne j}s_k}{s_0}\right)\\
+&=\gamma s_j+\ddp{s_0}
+ \left(1+\frac{\sum_{k=1}^{J}s_k}{s_0}\right)\\
+&=\gamma s_j+\ddp{s_0}
+ \left(1+\frac{1-s_0}{s_0}\right)
+ =\gamma s_j+\frac{1}{s_0}\ddp{s_0}.
+\end{align*}
+Therefore, the outside-option and cross-price derivatives are
+\begin{equation}
+\boxed{\ddp{s_0}=-\gamma s_0s_j},
+\qquad
+\boxed{\ddp{s_k}=-\gamma s_ks_j\quad(k\ne j)}.
+\end{equation}
+Substituting the outside-option derivative back into the own-share equation,
+\begin{equation}
+\ddp{s_j}
+=\frac{s_j}{s_0}(-\gamma s_0s_j)+\gamma s_j
+=\boxed{\gamma s_j(1-s_j)}.
+\end{equation}
+
+\newpage
+\section{Quantities and the single-product markup}
+With fixed market size $M$, quantity is $q_j=Ms_j$. Thus
+\begin{equation}
+\ddp{q_j}=M\ddp{s_j}=\gamma q_j(1-s_j).
+\end{equation}
+For a single-product firm, the pricing condition implies
+\begin{equation}
+\boxed{
+ p_j-c_j=-\frac{q_j}{\partial q_j/\partial p_j}
+ =-\frac{1}{\gamma(1-s_j)}
+}.
+\end{equation}
+
+\section{Common ownership and monopoly}
+Assume the firm owns the set of apps $\mathcal J_f$. Its total profit is
+\begin{equation}
+\pi_f=\sum_{k\in\mathcal J_f}(p_k-c_k)q_k.
+\end{equation}
+For each app $j\in\mathcal J_f$, the first-order condition is
+\begin{equation}
+\frac{\partial\pi_f}{\partial p_j}
+=q_j+(p_j-c_j)\ddp{q_j}
++\sum_{\substack{k\in\mathcal J_f\\k\ne j}}(p_k-c_k)\ddp{q_k}=0.
+\end{equation}
+Let $\mu_k=p_k-c_k$. Substituting the logit derivatives and dividing by $q_j$,
+\begin{equation}
+1+\gamma\mu_j(1-s_j)
+-\gamma\sum_{\substack{k\in\mathcal J_f\\k\ne j}}\mu_k s_k=0.
+\end{equation}
+Expanding $\mu_j(1-s_j)$ and including app $j$ in the sum gives
+\begin{equation}
+\mu_j=\sum_{k\in\mathcal J_f}\mu_k s_k-\frac{1}{\gamma}.
+\end{equation}
+The right-hand side is identical for every app owned by the firm, so
+$\mu_j=\mu_k=\mu$. Consequently,
+\begin{equation}
+0=1+\gamma\mu\left(1-s_j-
+ \sum_{\substack{k\in\mathcal J_f\\k\ne j}}s_k\right).
+\end{equation}
+\begin{equation}
+\boxed{\mu=-\frac{1}{\gamma\left(1-s_j-
+ \sum_{\substack{k\in\mathcal J_f\\k\ne j}}s_k\right)}
+ =-\frac{1}{\gamma(1-S_f)}},
+\qquad S_f=\sum_{k\in\mathcal J_f}s_k.
+\end{equation}
+\textbf{Monopoly specialization.} If all inside apps are owned by the same
+firm, $S_f=1-s_0$, so the preceding expression gives
+\[
+\boxed{\mu=-\frac{1}{\gamma s_0}}.
+\]
+\vfill
+
+\clearpage
+\endgroup
+\end{document}
